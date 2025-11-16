@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตัวช่วยดริปกาแฟหลายสูตร</title>
+    <!-- โหลด Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* ตั้งค่าฟอนต์ */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f3f0; /* สีพื้นหลังอ่อนๆ คล้ายกาแฟ */
+        }
+        .coffee-bg {
+            background-color: #4a2c2a; /* สีน้ำตาลเข้ม */
+        }
+        .timer-display {
+            font-size: 3.5rem;
+            letter-spacing: 0.1em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        #coffee-amount::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #d97706; /* orange-600 */
+            cursor: pointer;
+            box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4); /* ring yellow-300 */
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="app" class="w-full max-w-lg bg-white shadow-2xl rounded-2xl overflow-hidden">
+        <!-- ส่วนหัว (Header) -->
+        <header class="coffee-bg text-white p-6 rounded-t-2xl">
+            <h1 class="text-3xl font-bold text-center">☕ ตัวช่วยดริปกาแฟหลายสูตร</h1>
+            <p id="recipe-description" class="text-center text-sm mt-1 opacity-90"></p>
+        </header>
+
+        <!-- เนื้อหาหลัก -->
+        <main class="p-6">
+            <!-- ส่วนเลือกสูตร -->
+            <div class="mb-6 p-4 bg-gray-100 rounded-xl shadow-inner border border-gray-200">
+                <label for="recipe-select" class="block text-lg font-semibold text-gray-800 mb-2">
+                    เลือกสูตรกาแฟ:
+                </label>
+                <select id="recipe-select" class="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-blue-500 focus:border-blue-500 transition duration-300">
+                    <option value="hot_drip">ร้อน: ดริปมาตรฐาน (1:15)</option>
+                    <option value="iced_drip">เย็น: ดริปใส่น้ำแข็ง (1:12)</option>
+                </select>
+            </div>
+
+            <!-- ส่วนปรับปริมาณกาแฟ -->
+            <div class="mb-6 p-4 bg-yellow-50 rounded-xl shadow-inner border border-yellow-200">
+                <label for="coffee-amount" class="block text-lg font-semibold text-gray-800 mb-2">
+                    ปริมาณกาแฟที่ใช้ (กรัม):
+                </label>
+                <div class="flex items-center space-x-3">
+                    <input type="range" id="coffee-amount" min="10" max="30" step="1" value="15" 
+                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer transition duration-300">
+                    <span id="coffee-display" class="text-2xl font-extrabold text-red-600 w-16 text-right">15</span>
+                    <span class="text-xl font-bold text-gray-600">g</span>
+                </div>
+            </div>
+
+            <!-- ส่วนแสดงผลเวลาและปุ่มควบคุม -->
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
+                <!-- ตัวจับเวลาหลัก -->
+                <div class="flex-1 p-5 bg-gray-800 text-white rounded-xl text-center shadow-lg">
+                    <p class="text-sm uppercase opacity-75">เวลาที่ใช้ไป</p>
+                    <div id="timer" class="timer-display font-mono mt-1">00:00</div>
+                </div>
+                <!-- ปุ่มควบคุม -->
+                <div class="flex-1 flex flex-col space-y-2">
+                    <button id="start-btn" class="w-full p-3 text-white font-bold rounded-lg transition duration-300 shadow-lg bg-green-600 hover:bg-green-700 active:bg-green-800">
+                        เริ่มดริป (Start)
+                    </button>
+                    <button id="stop-btn" class="w-full p-3 text-white font-bold rounded-lg transition duration-300 shadow-lg bg-orange-500 hover:bg-orange-600 active:bg-orange-700 hidden">
+                        หยุดชั่วคราว (Pause)
+                    </button>
+                    <button id="reset-btn" class="w-full p-3 text-gray-700 bg-gray-200 font-bold rounded-lg transition duration-300 hover:bg-gray-300 active:bg-gray-400 shadow-lg">
+                        รีเซ็ต (Reset)
+                    </button>
+                </div>
+            </div>
+
+            <!-- สถานะปัจจุบันและการนับถอยหลัง -->
+            <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl mb-6 text-center shadow-lg">
+                <p class="text-sm font-semibold text-blue-800">สถานะปัจจุบัน:</p>
+                <p id="current-step-status" class="text-xl font-bold text-blue-900 mt-1">พร้อมที่จะเริ่ม</p>
+                <div class="mt-3 border-t pt-3 border-blue-200">
+                    <p class="text-sm font-semibold text-gray-600">นับถอยหลังสู่การรินครั้งถัดไป:</p>
+                    <p id="countdown-display" class="text-3xl font-extrabold text-orange-600 font-mono mt-1">--:--</p>
+                </div>
+            </div>
+
+            <!-- ตารางสูตรการรินน้ำ -->
+            <div class="mt-6">
+                <h2 class="text-xl font-bold text-gray-800 mb-3 border-b-2 border-orange-300 pb-1">ขั้นตอนการรินน้ำ</h2>
+                <div id="recipe-list" class="space-y-3">
+                    <!-- รายละเอียดสูตรจะถูกสร้างด้วย JavaScript -->
+                </div>
+                <div class="mt-4 p-3 bg-red-100 text-red-800 rounded-lg text-sm font-medium">
+                    <p>ปริมาณน้ำร้อนรวมที่ต้องใช้: <span id="total-hot-water" class="font-extrabold">0</span> กรัม</p>
+                    <p id="ice-info" class="mt-1 hidden">ปริมาณน้ำแข็งที่ต้องใช้ในโถ: <span id="total-ice" class="font-extrabold">0</span> กรัม</p>
+                    <p id="brew-time-info" class="mt-1">เวลาเป้าหมายรวม: 2:30 นาที</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // กำหนดตัวแปรและ DOM Elements
+        const recipeSelect = document.getElementById('recipe-select');
+        const recipeDescription = document.getElementById('recipe-description');
+        const coffeeInput = document.getElementById('coffee-amount');
+        const coffeeDisplay = document.getElementById('coffee-display');
+        const totalHotWaterDisplay = document.getElementById('total-hot-water');
+        const totalIceDisplay = document.getElementById('total-ice');
+        const iceInfo = document.getElementById('ice-info');
+        const brewTimeInfo = document.getElementById('brew-time-info');
+        const recipeList = document.getElementById('recipe-list');
+        const timerDisplay = document.getElementById('timer');
+        const countdownDisplay = document.getElementById('countdown-display');
+        const statusDisplay = document.getElementById('current-step-status');
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const resetBtn = document.getElementById('reset-btn');
+
+        // ตัวแปรสถานะและค่าคงที่
+        const POUR_TIMINGS = [0, 30, 60, 90]; // วินาทีที่ต้องเริ่มรินสำหรับ Hot/Iced Drip
+
+        // นิยามสูตรทั้งหมด
+        const recipes = {
+            hot_drip: {
+                name: "กาแฟดริปร้อนมาตรฐาน",
+                description: "อัตราส่วน 1:15 (กาแฟ:น้ำ) | 4 รอบการริน",
+                ratio: 15,
+                pourSegments: 3,
+                maxTime: 150, // 2:30 นาที
+                isIced: false,
+                waterSplit: { hot: 1, ice: 0 }
+            },
+            iced_drip: {
+                name: "กาแฟดริปเย็น (Iced Drip)",
+                description: "อัตราส่วนรวม 1:12 (น้ำ+น้ำแข็ง) | แบ่งน้ำร้อน 60%, น้ำแข็ง 40%",
+                ratio: 12,
+                pourSegments: 3,
+                maxTime: 150, // 2:30 นาที
+                isIced: true,
+                // สัดส่วนน้ำร้อนที่ริน (60%) น้ำแข็งในโถ (40%)
+                waterSplit: { hot: 0.6, ice: 0.4 } 
+            }
+        };
+
+        let currentRecipeKey = recipeSelect.value;
+        let coffeeAmount = parseInt(coffeeInput.value);
+        let timerInterval;
+        let timeInSeconds = 0;
+        let isRunning = false;
+        let recipeSteps = [];
+
+        // 1. ฟังก์ชันรูปแบบเวลา
+        function formatTime(totalSeconds) {
+            if (totalSeconds < 0) totalSeconds = 0;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // 2. ฟังก์ชันคำนวณและแสดงสูตร
+        function updateRecipe() {
+            currentRecipeKey = recipeSelect.value;
+            const currentRecipe = recipes[currentRecipeKey];
+            coffeeAmount = parseInt(coffeeInput.value);
+            coffeeDisplay.textContent = coffeeAmount;
+            
+            recipeDescription.textContent = currentRecipe.description;
+            brewTimeInfo.textContent = `เวลาเป้าหมายรวม: ${formatTime(currentRecipe.maxTime)} นาที`;
+
+            // คำนวณปริมาณของเหลวทั้งหมดตามอัตราส่วน
+            const totalLiquid = coffeeAmount * currentRecipe.ratio; 
+
+            // คำนวณปริมาณน้ำร้อนและน้ำแข็ง
+            const totalHotWater = Math.round(totalLiquid * currentRecipe.waterSplit.hot);
+            const totalIce = Math.round(totalLiquid * currentRecipe.waterSplit.ice);
+
+            // แสดงผลรวม
+            totalHotWaterDisplay.textContent = totalHotWater;
+            totalIceDisplay.textContent = totalIce;
+            
+            if (currentRecipe.isIced) {
+                iceInfo.classList.remove('hidden');
+            } else {
+                iceInfo.classList.add('hidden');
+            }
+
+            // คำนวณปริมาณน้ำแต่ละรอบ
+            const bloomAmount = coffeeAmount * 2; // Blooming: 2x ของกาแฟ
+            const remainingHotWater = totalHotWater - bloomAmount;
+            const pourAmount = Math.round(remainingHotWater / currentRecipe.pourSegments);
+
+            // คำนวณปริมาณน้ำสำหรับรอบสุดท้ายเพื่อความแม่นยำ
+            const finalPourAmount = totalHotWater - bloomAmount - (pourAmount * (currentRecipe.pourSegments - 1));
+
+            // โครงสร้างสูตร
+            recipeSteps = [
+                { time: POUR_TIMINGS[0], label: "รินน้ำ 1 (Blooming)", amount: bloomAmount, cumulative: bloomAmount, instruction: "รินน้ำให้ทั่วผงกาแฟ ปล่อยให้กาแฟคายแก๊ส 30 วินาที" },
+                { time: POUR_TIMINGS[1], label: "รินน้ำ 2", amount: pourAmount, cumulative: bloomAmount + pourAmount, instruction: "รินน้ำร้อนเพิ่มแบบวนก้นหอย" },
+                { time: POUR_TIMINGS[2], label: "รินน้ำ 3", amount: pourAmount, cumulative: bloomAmount + (pourAmount * 2), instruction: "รินน้ำร้อนเพิ่มต่อ" },
+                { time: POUR_TIMINGS[3], label: "รินน้ำ 4 (สุดท้าย)", amount: finalPourAmount, cumulative: totalHotWater, instruction: "รินน้ำร้อนจนครบปริมาณรวมทั้งหมด" }
+            ];
+
+            // สร้าง UI ตารางสูตร
+            recipeList.innerHTML = '';
+            recipeSteps.forEach((step, index) => {
+                const element = document.createElement('div');
+                element.id = `step-${index}`;
+                element.className = `step-item p-3 rounded-lg flex justify-between items-center text-gray-700 transition duration-300 shadow-md border border-gray-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`;
+                element.innerHTML = `
+                    <div class="flex flex-col">
+                        <span class="font-bold text-base text-gray-900">${step.label}</span>
+                        <span class="text-xs text-gray-500">${step.instruction}</span>
+                        <span class="text-sm font-mono mt-1 text-blue-600">เวลาเริ่มริน: ${formatTime(step.time)}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-2xl font-extrabold text-orange-600">${step.amount} g</span>
+                        <span class="block text-xs text-gray-500"> (รวมน้ำร้อน: ${step.cumulative} g)</span>
+                    </div>
+                `;
+                recipeList.appendChild(element);
+            });
+            updateStatusAndCountdown();
+        }
+
+        // 3. ฟังก์ชันอัปเดตสถานะและการนับถอยหลัง
+        function updateStatusAndCountdown() {
+            const currentRecipe = recipes[currentRecipeKey];
+            let currentStepIndex = -1;
+            
+            // 1. หาขั้นตอนปัจจุบันที่เพิ่งดำเนินการเสร็จสิ้น
+            for (let i = POUR_TIMINGS.length - 1; i >= 0; i--) {
+                if (timeInSeconds >= POUR_TIMINGS[i]) {
+                    currentStepIndex = i;
+                    break;
+                }
+            }
+
+            // 2. คำนวณเวลานับถอยหลัง
+            if (isRunning && timeInSeconds < currentRecipe.maxTime) {
+                let nextPourTime;
+                
+                if (currentStepIndex < POUR_TIMINGS.length - 1) {
+                    nextPourTime = POUR_TIMINGS[currentStepIndex + 1];
+                    const countdown = nextPourTime - timeInSeconds;
+                    countdownDisplay.textContent = formatTime(countdown);
+                } else {
+                    // กำลังรินรอบสุดท้าย: นับถอยหลังถึงเวลาที่ควรหยุด
+                    nextPourTime = currentRecipe.maxTime;
+                    const countdown = nextPourTime - timeInSeconds;
+                    countdownDisplay.textContent = formatTime(countdown);
+                }
+            } else {
+                countdownDisplay.textContent = "--:--";
+            }
+            
+            // 3. อัปเดตข้อความสถานะ
+            if (!isRunning && timeInSeconds === 0) {
+                statusDisplay.textContent = `พร้อมที่จะเริ่ม: ${recipes[currentRecipeKey].name}`;
+            } else if (timeInSeconds >= currentRecipe.maxTime) {
+                statusDisplay.textContent = "✅ สิ้นสุดการสกัด (กาแฟพร้อมเสิร์ฟ)";
+            } else if (currentStepIndex !== -1 && recipeSteps.length > 0) {
+                const currentStep = recipeSteps[currentStepIndex];
+                statusDisplay.textContent = `รินเสร็จ: ${currentStep.label} (${currentStep.amount} g)`;
+                if (currentStepIndex < POUR_TIMINGS.length - 1 && isRunning) {
+                     statusDisplay.textContent += ` - เตรียมรินรอบถัดไป`;
+                }
+            }
+
+            // 4. ไฮไลต์ขั้นตอน
+            document.querySelectorAll('.step-item').forEach((el, index) => {
+                const stepElement = document.getElementById(`step-${index}`);
+                // ล้างคลาสไฮไลต์/เสร็จสิ้น
+                stepElement.classList.remove('ring-4', 'ring-orange-300', 'bg-orange-100', 'opacity-50', 'bg-green-100');
+                
+                // คืนค่าสีพื้นหลังเริ่มต้น
+                stepElement.classList.remove('bg-gray-50', 'bg-white');
+                stepElement.classList.add(index % 2 === 0 ? 'bg-gray-50' : 'bg-white');
+
+                if (timeInSeconds > POUR_TIMINGS[index] || timeInSeconds === POUR_TIMINGS[index]) {
+                    // ขั้นตอนที่เสร็จสิ้น (Finished/Passed)
+                    stepElement.classList.add('opacity-50', 'bg-green-100');
+                }
+                
+                if (index === currentStepIndex && timeInSeconds < currentRecipe.maxTime) {
+                    // ขั้นตอนปัจจุบันที่เพิ่งทำเสร็จ (เน้น)
+                    stepElement.classList.remove('opacity-50', 'bg-green-100', 'bg-gray-50', 'bg-white');
+                    stepElement.classList.add('ring-4', 'ring-orange-300', 'bg-orange-100');
+                }
+            });
+        }
+
+        // 4. ฟังก์ชันอัปเดตตัวจับเวลาหลัก
+        function updateTimer() {
+            timeInSeconds++;
+            timerDisplay.textContent = formatTime(timeInSeconds);
+            updateStatusAndCountdown();
+
+            // หยุดอัตโนมัติเมื่อครบเวลาสูงสุด
+            if (timeInSeconds >= recipes[currentRecipeKey].maxTime) {
+                stopTimer(true);
+            }
+        }
+
+        // 5. ฟังก์ชันควบคุม
+        function startTimer() {
+            if (isRunning) return;
+            isRunning = true;
+            timerInterval = setInterval(updateTimer, 1000);
+            startBtn.classList.add('hidden');
+            stopBtn.classList.remove('hidden');
+            stopBtn.textContent = 'หยุดชั่วคราว (Pause)';
+            coffeeInput.disabled = true;
+            recipeSelect.disabled = true; // ล็อกการเปลี่ยนสูตรขณะดริป
+            updateStatusAndCountdown();
+        }
+
+        function stopTimer(isFinished = false) {
+            if (!isRunning && !isFinished) return;
+            clearInterval(timerInterval);
+            isRunning = false;
+            
+            if (isFinished) {
+                // สิ้นสุดการทำงาน
+                stopBtn.classList.add('hidden');
+                startBtn.classList.remove('hidden');
+                startBtn.textContent = 'สิ้นสุดการดริป';
+                startBtn.disabled = true;
+                timerDisplay.classList.add('text-red-500');
+            } else {
+                // หยุดชั่วคราว
+                stopBtn.textContent = 'ดำเนินการต่อ (Continue)';
+                startBtn.classList.remove('hidden');
+                stopBtn.classList.add('hidden');
+            }
+            coffeeInput.disabled = false;
+            recipeSelect.disabled = false;
+            updateStatusAndCountdown();
+        }
+
+        function resetTimer() {
+            stopTimer();
+            timeInSeconds = 0;
+            timerDisplay.textContent = formatTime(timeInSeconds);
+            timerDisplay.classList.remove('text-red-500');
+            
+            startBtn.textContent = 'เริ่มดริป (Start)';
+            startBtn.disabled = false;
+            startBtn.classList.remove('hidden');
+            stopBtn.classList.add('hidden');
+            
+            coffeeInput.disabled = false;
+            recipeSelect.disabled = false;
+            updateRecipe(); // รีเซ็ตสูตรและสถานะทั้งหมด
+        }
+
+        // 6. การผูก Event Listeners
+        recipeSelect.addEventListener('change', resetTimer); // รีเซ็ตเมื่อเปลี่ยนสูตร
+        coffeeInput.addEventListener('input', updateRecipe);
+        startBtn.addEventListener('click', startTimer);
+        stopBtn.addEventListener('click', stopTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // เริ่มต้นแอปพลิเคชัน
+        updateRecipe(); // คำนวณสูตรและแสดงผลครั้งแรก
+
+    </script>
+</body>
+</html>
