@@ -2,383 +2,695 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ตัวช่วยดริปกาแฟหลายสูตร</title>
-    <!-- โหลด Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Smart Drip Ultimate</title>
+    
+    <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        /* ตั้งค่าฟอนต์ */
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7f3f0; /* สีพื้นหลังอ่อนๆ คล้ายกาแฟ */
+        /* --- Typography & Base --- */
+        body { 
+            font-family: 'Prompt', sans-serif; 
+            -webkit-tap-highlight-color: transparent;
+            background-color: #FAFAFA;
         }
-        .coffee-bg {
-            background-color: #4a2c2a; /* สีน้ำตาลเข้ม */
+        .font-mono { font-family: 'Space Mono', monospace; }
+        
+        /* --- Layout Helper --- */
+        .h-dvh { height: 100dvh; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* --- Custom UI Components --- */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-top: 1px solid rgba(0,0,0,0.05);
         }
-        .timer-display {
-            font-size: 3.5rem;
-            letter-spacing: 0.1em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        
+        .coffee-gradient {
+            background: linear-gradient(135deg, #2C2C2C 0%, #4A4A4A 100%);
+            color: white;
         }
-        #coffee-amount::-webkit-slider-thumb {
+
+        .btn-primary {
+            background: #1F2937;
+            color: white;
+            transition: transform 0.1s;
+        }
+        .btn-primary:active { transform: scale(0.96); }
+
+        /* --- Range Slider Styling --- */
+        input[type=range] {
             -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
             border-radius: 50%;
-            background: #d97706; /* orange-600 */
+            background: #1F2937;
             cursor: pointer;
-            box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.4); /* ring yellow-300 */
+            margin-top: -10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #E5E7EB;
+            border-radius: 2px;
+        }
+
+        /* --- Animations --- */
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(31, 41, 55, 0.2); }
+            70% { box-shadow: 0 0 0 10px rgba(31, 41, 55, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(31, 41, 55, 0); }
+        }
+        .brewing-pulse {
+            animation: pulse-ring 2s infinite;
+        }
+        
+        .step-transition {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="text-slate-800 h-dvh overflow-hidden flex flex-col selection:bg-stone-200">
 
-    <div id="app" class="w-full max-w-lg bg-white shadow-2xl rounded-2xl overflow-hidden">
-        <!-- ส่วนหัว (Header) -->
-        <header class="coffee-bg text-white p-6 rounded-t-2xl">
-            <h1 class="text-3xl font-bold text-center">☕ ตัวช่วยดริปกาแฟหลายสูตร</h1>
-            <p id="recipe-description" class="text-center text-sm mt-1 opacity-90"></p>
-        </header>
-
-        <!-- เนื้อหาหลัก -->
-        <main class="p-6">
-            <!-- ส่วนเลือกสูตร -->
-            <div class="mb-6 p-4 bg-gray-100 rounded-xl shadow-inner border border-gray-200">
-                <label for="recipe-select" class="block text-lg font-semibold text-gray-800 mb-2">
-                    เลือกสูตรกาแฟ:
-                </label>
-                <select id="recipe-select" class="w-full p-3 border border-gray-300 rounded-lg text-lg focus:ring-blue-500 focus:border-blue-500 transition duration-300">
-                    <option value="hot_drip">ร้อน: ดริปมาตรฐาน (1:15)</option>
-                    <option value="iced_drip">เย็น: ดริปใส่น้ำแข็ง (1:12)</option>
-                </select>
+    <!-- HEADER -->
+    <header class="flex-none px-5 py-4 bg-white/90 backdrop-blur z-20 flex items-center justify-between border-b border-slate-100">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-slate-200">
+                <i class="fa-solid fa-mug-hot text-lg"></i>
             </div>
+            <div>
+                <h1 class="text-lg font-bold leading-none tracking-tight">Drip Master</h1>
+                <span class="text-[10px] text-slate-400 font-medium tracking-wide uppercase">Professional Assistant</span>
+            </div>
+        </div>
+        <button onclick="resetApp()" class="w-10 h-10 rounded-full bg-slate-50 text-slate-400 hover:bg-slate-100 hover:text-slate-600 flex items-center justify-center transition">
+            <i class="fa-solid fa-arrow-rotate-right"></i>
+        </button>
+    </header>
 
-            <!-- ส่วนปรับปริมาณกาแฟ -->
-            <div class="mb-6 p-4 bg-yellow-50 rounded-xl shadow-inner border border-yellow-200">
-                <label for="coffee-amount" class="block text-lg font-semibold text-gray-800 mb-2">
-                    ปริมาณกาแฟที่ใช้ (กรัม):
-                </label>
-                <div class="flex items-center space-x-3">
-                    <input type="range" id="coffee-amount" min="10" max="30" step="1" value="15" 
-                           class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer transition duration-300">
-                    <span id="coffee-display" class="text-2xl font-extrabold text-red-600 w-16 text-right">15</span>
-                    <span class="text-xl font-bold text-gray-600">g</span>
+    <!-- SETUP SCREEN -->
+    <main id="setup-screen" class="flex-1 overflow-y-auto w-full max-w-lg mx-auto p-5 pb-36 space-y-6">
+        
+        <!-- 1. Equipment Selector -->
+        <section>
+            <div class="flex justify-between items-end mb-3">
+                <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Equipment</h2>
+                <div id="grind-badge" class="text-[10px] font-medium bg-blue-50 text-blue-600 px-2 py-1 rounded-md transition-all">
+                    แนะนำ: บดปานกลาง
                 </div>
             </div>
+            <div class="grid grid-cols-4 gap-3">
+                <!-- Generated by JS -->
+            </div>
+        </section>
 
-            <!-- ส่วนแสดงผลเวลาและปุ่มควบคุม -->
-            <div class="flex flex-col md:flex-row gap-4 mb-6">
-                <!-- ตัวจับเวลาหลัก -->
-                <div class="flex-1 p-5 bg-gray-800 text-white rounded-xl text-center shadow-lg">
-                    <p class="text-sm uppercase opacity-75">เวลาที่ใช้ไป</p>
-                    <div id="timer" class="timer-display font-mono mt-1">00:00</div>
-                </div>
-                <!-- ปุ่มควบคุม -->
-                <div class="flex-1 flex flex-col space-y-2">
-                    <button id="start-btn" class="w-full p-3 text-white font-bold rounded-lg transition duration-300 shadow-lg bg-green-600 hover:bg-green-700 active:bg-green-800">
-                        เริ่มดริป (Start)
+        <!-- 2. Coffee & Ratio Calculator -->
+        <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100">
+            <!-- Coffee Input -->
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center gap-4">
+                    <button onclick="adjustCoffee(-1)" class="w-8 h-8 rounded-full border border-slate-200 text-slate-400 flex items-center justify-center active:bg-slate-50">
+                        <i class="fa-solid fa-minus text-xs"></i>
                     </button>
-                    <button id="stop-btn" class="w-full p-3 text-white font-bold rounded-lg transition duration-300 shadow-lg bg-orange-500 hover:bg-orange-600 active:bg-orange-700 hidden">
-                        หยุดชั่วคราว (Pause)
-                    </button>
-                    <button id="reset-btn" class="w-full p-3 text-gray-700 bg-gray-200 font-bold rounded-lg transition duration-300 hover:bg-gray-300 active:bg-gray-400 shadow-lg">
-                        รีเซ็ต (Reset)
+                    <div class="text-center">
+                        <div class="text-xs text-slate-400 font-medium uppercase mb-1">Coffee</div>
+                        <div class="text-3xl font-bold font-mono text-slate-800 leading-none"><span id="coffee-val">20</span><span class="text-base text-slate-400 ml-1">g</span></div>
+                    </div>
+                    <button onclick="adjustCoffee(1)" class="w-8 h-8 rounded-full border border-slate-200 text-slate-600 flex items-center justify-center active:bg-slate-50">
+                        <i class="fa-solid fa-plus text-xs"></i>
                     </button>
                 </div>
-            </div>
+                
+                <div class="h-10 w-px bg-slate-100 mx-2"></div>
 
-            <!-- สถานะปัจจุบันและการนับถอยหลัง -->
-            <div class="p-4 bg-blue-50 border border-blue-200 rounded-xl mb-6 text-center shadow-lg">
-                <p class="text-sm font-semibold text-blue-800">สถานะปัจจุบัน:</p>
-                <p id="current-step-status" class="text-xl font-bold text-blue-900 mt-1">พร้อมที่จะเริ่ม</p>
-                <div class="mt-3 border-t pt-3 border-blue-200">
-                    <p class="text-sm font-semibold text-gray-600">นับถอยหลังสู่การรินครั้งถัดไป:</p>
-                    <p id="countdown-display" class="text-3xl font-extrabold text-orange-600 font-mono mt-1">--:--</p>
+                <div class="text-right">
+                    <div class="text-xs text-slate-400 font-medium uppercase mb-1">Water</div>
+                    <div class="text-3xl font-bold font-mono text-indigo-600 leading-none" id="water-val">300</div>
                 </div>
             </div>
 
-            <!-- ตารางสูตรการรินน้ำ -->
-            <div class="mt-6">
-                <h2 class="text-xl font-bold text-gray-800 mb-3 border-b-2 border-orange-300 pb-1">ขั้นตอนการรินน้ำ</h2>
-                <div id="recipe-list" class="space-y-3">
-                    <!-- รายละเอียดสูตรจะถูกสร้างด้วย JavaScript -->
+            <!-- Ratio Slider -->
+            <div class="pt-2">
+                <div class="flex justify-between text-xs text-slate-400 mb-2 font-mono">
+                    <span>STRONG (1:10)</span>
+                    <span class="text-slate-800 font-bold">1:<span id="ratio-val">15</span></span>
+                    <span>TEA-LIKE (1:20)</span>
                 </div>
-                <div class="mt-4 p-3 bg-red-100 text-red-800 rounded-lg text-sm font-medium">
-                    <p>ปริมาณน้ำร้อนรวมที่ต้องใช้: <span id="total-hot-water" class="font-extrabold">0</span> กรัม</p>
-                    <p id="ice-info" class="mt-1 hidden">ปริมาณน้ำแข็งที่ต้องใช้ในโถ: <span id="total-ice" class="font-extrabold">0</span> กรัม</p>
-                    <p id="brew-time-info" class="mt-1">เวลาเป้าหมายรวม: 2:30 นาที</p>
-                </div>
+                <input type="range" id="ratio-slider" min="10" max="20" step="0.5" value="15" oninput="updateCalc()">
             </div>
-        </main>
+        </section>
+
+        <!-- 3. Recipe Selector -->
+        <section>
+            <h2 class="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Brewing Method</h2>
+            <div id="recipe-list" class="space-y-3">
+                <!-- Generated by JS -->
+            </div>
+        </section>
+
+        <div class="h-8"></div> <!-- Spacer -->
+    </main>
+    
+    <!-- Floating Start Button -->
+    <div id="start-btn-container" class="fixed bottom-0 left-0 w-full p-5 glass-panel z-30">
+        <button onclick="startBrewing()" class="w-full btn-primary h-14 rounded-2xl text-lg font-semibold shadow-xl shadow-slate-200 flex items-center justify-center gap-3 max-w-lg mx-auto">
+            <span>Start Brewing</span>
+            <i class="fa-solid fa-arrow-right"></i>
+        </button>
     </div>
 
+    <!-- BREWING SCREEN -->
+    <main id="brewing-screen" class="hidden flex-col h-full w-full max-w-lg mx-auto bg-white relative">
+        
+        <!-- Brewing Top Bar -->
+        <div class="flex-none flex justify-between items-center px-5 py-3 border-b border-slate-50 bg-white z-10">
+            <button onclick="stopBrewing()" class="text-slate-400 hover:text-red-500 text-sm font-medium transition flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-50">
+                <i class="fa-solid fa-xmark"></i> Cancel
+            </button>
+            <div class="flex gap-2">
+                <button onclick="toggleWakeLock()" id="wakelock-btn" class="text-slate-300 p-2 rounded-full hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-sun"></i>
+                </button>
+                <button onclick="toggleSound()" id="sound-btn" class="text-slate-600 p-2 rounded-full hover:bg-slate-50 transition">
+                    <i class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Timer Visual -->
+        <div class="flex-1 flex flex-col items-center justify-center relative min-h-[300px]">
+            <!-- Progress Ring -->
+            <div class="relative w-64 h-64 flex items-center justify-center">
+                <svg class="w-full h-full transform -rotate-90 drop-shadow-xl">
+                    <circle cx="128" cy="128" r="120" stroke="#F3F4F6" stroke-width="6" fill="transparent" />
+                    <circle id="timer-circle" cx="128" cy="128" r="120" stroke="#1F2937" stroke-width="6" fill="transparent" stroke-dasharray="754" stroke-dashoffset="0" stroke-linecap="round" class="transition-all duration-1000" />
+                </svg>
+                
+                <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
+                    <span id="step-label" class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-2 bg-indigo-50 px-2 py-1 rounded">Blooming</span>
+                    <span id="main-timer" class="text-6xl font-bold text-slate-800 font-mono tracking-tighter">00:00</span>
+                    <div class="mt-2 text-slate-400 text-sm font-medium flex items-center gap-2">
+                        <span>Target:</span>
+                        <span id="step-target-display" class="text-slate-800 font-bold text-lg">40ml</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Instruction -->
+            <div class="mt-8 text-center px-8 w-full animate-fade-in">
+                <p id="step-instruction" class="text-slate-500 text-lg font-medium leading-relaxed">เทน้ำร้อนให้ทั่วผงกาแฟ</p>
+            </div>
+        </div>
+
+        <!-- Controls (Bottom Sheet) -->
+        <div class="flex-none bg-slate-50 border-t border-slate-100 p-6 pb-8 rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.03)] z-20">
+            
+            <!-- Control Buttons -->
+            <div class="flex items-center justify-center gap-6 mb-6">
+                <button onclick="togglePause()" id="pause-btn" class="w-16 h-16 rounded-2xl bg-white border border-slate-100 text-slate-800 shadow-sm flex items-center justify-center text-2xl active:scale-95 transition hover:shadow-md">
+                    <i class="fa-solid fa-pause"></i>
+                </button>
+                <button onclick="skipStep()" class="w-16 h-16 rounded-2xl bg-slate-900 text-white shadow-lg shadow-slate-300 flex items-center justify-center text-2xl active:scale-95 transition hover:bg-slate-800">
+                    <i class="fa-solid fa-forward-step"></i>
+                </button>
+            </div>
+
+            <!-- Mini Timeline -->
+            <div class="relative">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3 flex justify-between">
+                    <span>Timeline</span>
+                    <i class="fa-solid fa-chevron-up text-slate-300"></i>
+                </div>
+                <div id="timeline-container" class="h-28 overflow-y-auto no-scrollbar space-y-2 pr-1 relative mask-linear-fade">
+                    <!-- Timeline Items -->
+                </div>
+                <!-- Fade overlay for list -->
+                <div class="absolute bottom-0 left-0 w-full h-6 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none"></div>
+            </div>
+        </div>
+    </main>
+
+    <!-- SUCCESS MODAL -->
+    <div id="finish-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden items-center justify-center z-50 px-6 opacity-0 transition-opacity duration-300">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-xs w-full text-center transform scale-95 transition-transform duration-300" id="modal-content">
+            <div class="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl shadow-inner">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Brew Perfect!</h2>
+            <p class="text-slate-500 mb-8 text-sm">กาแฟของคุณพร้อมเสิร์ฟแล้ว</p>
+            
+            <div class="flex justify-center gap-8 mb-8 border-t border-b border-slate-50 py-4">
+                <div>
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wide">Time</div>
+                    <div id="final-time" class="text-xl font-bold text-slate-700 font-mono">03:00</div>
+                </div>
+                <div>
+                    <div class="text-[10px] text-slate-400 uppercase tracking-wide">Yield</div>
+                    <div id="final-water" class="text-xl font-bold text-slate-700 font-mono">300ml</div>
+                </div>
+            </div>
+
+            <button onclick="closeModal()" class="w-full btn-primary py-3.5 rounded-xl font-semibold shadow-lg text-sm">
+                Enjoy Coffee
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        // กำหนดตัวแปรและ DOM Elements
-        const recipeSelect = document.getElementById('recipe-select');
-        const recipeDescription = document.getElementById('recipe-description');
-        const coffeeInput = document.getElementById('coffee-amount');
-        const coffeeDisplay = document.getElementById('coffee-display');
-        const totalHotWaterDisplay = document.getElementById('total-hot-water');
-        const totalIceDisplay = document.getElementById('total-ice');
-        const iceInfo = document.getElementById('ice-info');
-        const brewTimeInfo = document.getElementById('brew-time-info');
-        const recipeList = document.getElementById('recipe-list');
-        const timerDisplay = document.getElementById('timer');
-        const countdownDisplay = document.getElementById('countdown-display');
-        const statusDisplay = document.getElementById('current-step-status');
-        const startBtn = document.getElementById('start-btn');
-        const stopBtn = document.getElementById('stop-btn');
-        const resetBtn = document.getElementById('reset-btn');
+        // --- CONFIGURATION & DATA ---
+        const CONFIG = {
+            coffee: 20,
+            ratio: 15,
+            equipment: 'v60',
+            recipe: 'v60_standard',
+            sound: true
+        };
 
-        // ตัวแปรสถานะและค่าคงที่
-        const POUR_TIMINGS = [0, 30, 60, 90]; // วินาทีที่ต้องเริ่มรินสำหรับ Hot/Iced Drip
+        const EQUIPMENT = {
+            v60: { name: 'Hario V60', icon: 'fa-filter', tip: 'Medium-Fine Grind' },
+            kalita: { name: 'Kalita Wave', icon: 'fa-layer-group', tip: 'Medium Grind' },
+            origami: { name: 'Origami', icon: 'fa-star-of-life', tip: 'Medium-Fine Grind' },
+            chemex: { name: 'Chemex', icon: 'fa-flask', tip: 'Coarse Grind' }
+        };
 
-        // นิยามสูตรทั้งหมด
-        const recipes = {
-            hot_drip: {
-                name: "กาแฟดริปร้อนมาตรฐาน",
-                description: "อัตราส่วน 1:15 (กาแฟ:น้ำ) | 4 รอบการริน",
-                ratio: 15,
-                pourSegments: 3,
-                maxTime: 150, // 2:30 นาที
-                isIced: false,
-                waterSplit: { hot: 1, ice: 0 }
+        const RECIPES = {
+            v60_standard: {
+                name: "Standard Balanced",
+                desc: "Sweetness & Acidity Balance",
+                equipment: ['v60', 'origami'],
+                steps: (c, t) => [
+                    { name: "Blooming", water: c*2, time: 45, type: 'pour', text: "Pour gently to saturate grounds" },
+                    { name: "1st Pour (60%)", water: Math.round(t*0.6), time: 45, type: 'pour', text: "Pour in slow circular motion" },
+                    { name: "2nd Pour (100%)", water: t, time: 45, type: 'pour', text: "Pour center to edge" },
+                    { name: "Draw Down", water: t, time: 45, type: 'wait', text: "Wait for full drawdown" }
+                ]
             },
-            iced_drip: {
-                name: "กาแฟดริปเย็น (Iced Drip)",
-                description: "อัตราส่วนรวม 1:12 (น้ำ+น้ำแข็ง) | แบ่งน้ำร้อน 60%, น้ำแข็ง 40%",
-                ratio: 12,
-                pourSegments: 3,
-                maxTime: 150, // 2:30 นาที
-                isIced: true,
-                // สัดส่วนน้ำร้อนที่ริน (60%) น้ำแข็งในโถ (40%)
-                waterSplit: { hot: 0.6, ice: 0.4 } 
+            v60_tetsu: {
+                name: "Tetsu 4:6 Method",
+                desc: "World Champion Recipe",
+                equipment: ['v60', 'origami'],
+                steps: (c, t) => {
+                    const p = Math.round(t/5);
+                    return [
+                        { name: "Acidity Phase", water: p, time: 45, type: 'pour', text: "Defines acidity level" },
+                        { name: "Sweetness Phase", water: p*2, time: 45, type: 'pour', text: "Balances with sweetness" },
+                        { name: "Strength 1", water: p*3, time: 45, type: 'pour', text: "Builds body" },
+                        { name: "Strength 2", water: p*4, time: 45, type: 'pour', text: "Maintains strength" },
+                        { name: "Finish", water: t, time: 45, type: 'pour', text: "Final pour" }
+                    ];
+                }
+            },
+            v60_hoffmann: {
+                name: "Ultimate V60",
+                desc: "High Extraction & Evenness",
+                equipment: ['v60'],
+                steps: (c, t) => [
+                    { name: "Bloom & Swirl", water: c*2, time: 45, type: 'pour', text: "Pour then swirl brewer" },
+                    { name: "Pour to 60%", water: Math.round(t*0.6), time: 30, type: 'pour', text: "Fast pour to target" },
+                    { name: "Pour to 100%", water: t, time: 30, type: 'pour', text: "Gentle pour" },
+                    { name: "Stir & Swirl", water: t, time: 10, type: 'wait', text: "Stir gently then swirl" },
+                    { name: "Draw Down", water: t, time: 65, type: 'wait', text: "Wait for drawdown" }
+                ]
+            },
+            kalita_pulse: {
+                name: "Pulse Pouring",
+                desc: "Consistent Temperature",
+                equipment: ['kalita'],
+                steps: (c, t) => {
+                    const bloom = 40;
+                    const rem = t - bloom;
+                    const pulse = Math.round(rem/3);
+                    return [
+                        { name: "Bloom", water: bloom, time: 30, type: 'pour', text: "Saturate evenly" },
+                        { name: "Pulse 1", water: bloom+pulse, time: 45, type: 'pour', text: "Pour slowly" },
+                        { name: "Pulse 2", water: bloom+pulse*2, time: 45, type: 'pour', text: "Maintain water level" },
+                        { name: "Pulse 3", water: t, time: 45, type: 'pour', text: "Final pour" },
+                        { name: "Drain", water: t, time: 30, type: 'wait', text: "Let it drain" }
+                    ];
+                }
+            },
+            chemex_classic: {
+                name: "Chemex Classic",
+                desc: "Clean & Tea-like Body",
+                equipment: ['chemex'],
+                steps: (c, t) => [
+                    { name: "Heavy Bloom", water: c*3, time: 45, type: 'pour', text: "Stir bloom if needed" },
+                    { name: "Center Pour", water: Math.round(t*0.5), time: 60, type: 'pour', text: "Pour in center" },
+                    { name: "Fill Up", water: t, time: 60, type: 'pour', text: "Fill to target weight" },
+                    { name: "Long Drain", water: t, time: 60, type: 'wait', text: "Patience is key" }
+                ]
             }
         };
 
-        let currentRecipeKey = recipeSelect.value;
-        let coffeeAmount = parseInt(coffeeInput.value);
-        let timerInterval;
-        let timeInSeconds = 0;
-        let isRunning = false;
-        let recipeSteps = [];
+        // --- STATE MANAGEMENT ---
+        let session = {
+            active: false,
+            paused: false,
+            time: 0,
+            interval: null,
+            stepIdx: 0,
+            steps: [],
+            totalWater: 300,
+            wakeLock: null
+        };
 
-        // 1. ฟังก์ชันรูปแบบเวลา
-        function formatTime(totalSeconds) {
-            if (totalSeconds < 0) totalSeconds = 0;
-            const minutes = Math.floor(totalSeconds / 60);
-            const seconds = totalSeconds % 60;
-            return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        // --- INITIALIZATION ---
+        function init() {
+            renderEquipment();
+            updateCalc();
         }
 
-        // 2. ฟังก์ชันคำนวณและแสดงสูตร
-        function updateRecipe() {
-            currentRecipeKey = recipeSelect.value;
-            const currentRecipe = recipes[currentRecipeKey];
-            coffeeAmount = parseInt(coffeeInput.value);
-            coffeeDisplay.textContent = coffeeAmount;
+        // --- RENDERERS ---
+        function renderEquipment() {
+            const container = document.querySelector('#setup-screen section:first-child .grid');
+            container.innerHTML = '';
             
-            recipeDescription.textContent = currentRecipe.description;
-            brewTimeInfo.textContent = `เวลาเป้าหมายรวม: ${formatTime(currentRecipe.maxTime)} นาที`;
+            Object.entries(EQUIPMENT).forEach(([key, eq]) => {
+                const isActive = CONFIG.equipment === key;
+                const div = document.createElement('button');
+                div.className = `p-3 rounded-xl border flex flex-col items-center gap-2 transition-all duration-200 ${isActive ? 'border-slate-800 bg-slate-800 text-white shadow-md transform scale-105' : 'border-slate-100 bg-white text-slate-400 hover:border-slate-300'}`;
+                div.onclick = () => setEquipment(key);
+                div.innerHTML = `
+                    <i class="fa-solid ${eq.icon} text-xl mb-1"></i>
+                    <span class="text-[10px] font-bold uppercase tracking-wide">${eq.name}</span>
+                `;
+                container.appendChild(div);
+            });
+            document.getElementById('grind-badge').innerText = `Grind: ${EQUIPMENT[CONFIG.equipment].tip}`;
+            renderRecipes();
+        }
 
-            // คำนวณปริมาณของเหลวทั้งหมดตามอัตราส่วน
-            const totalLiquid = coffeeAmount * currentRecipe.ratio; 
-
-            // คำนวณปริมาณน้ำร้อนและน้ำแข็ง
-            const totalHotWater = Math.round(totalLiquid * currentRecipe.waterSplit.hot);
-            const totalIce = Math.round(totalLiquid * currentRecipe.waterSplit.ice);
-
-            // แสดงผลรวม
-            totalHotWaterDisplay.textContent = totalHotWater;
-            totalIceDisplay.textContent = totalIce;
+        function renderRecipes() {
+            const list = document.getElementById('recipe-list');
+            list.innerHTML = '';
             
-            if (currentRecipe.isIced) {
-                iceInfo.classList.remove('hidden');
-            } else {
-                iceInfo.classList.add('hidden');
+            let available = Object.entries(RECIPES).filter(([_, r]) => r.equipment.includes(CONFIG.equipment));
+            
+            // Auto-select logic if current recipe invalid
+            if (!available.find(r => r[0] === CONFIG.recipe)) {
+                CONFIG.recipe = available[0][0];
             }
 
-            // คำนวณปริมาณน้ำแต่ละรอบ
-            const bloomAmount = coffeeAmount * 2; // Blooming: 2x ของกาแฟ
-            const remainingHotWater = totalHotWater - bloomAmount;
-            const pourAmount = Math.round(remainingHotWater / currentRecipe.pourSegments);
-
-            // คำนวณปริมาณน้ำสำหรับรอบสุดท้ายเพื่อความแม่นยำ
-            const finalPourAmount = totalHotWater - bloomAmount - (pourAmount * (currentRecipe.pourSegments - 1));
-
-            // โครงสร้างสูตร
-            recipeSteps = [
-                { time: POUR_TIMINGS[0], label: "รินน้ำ 1 (Blooming)", amount: bloomAmount, cumulative: bloomAmount, instruction: "รินน้ำให้ทั่วผงกาแฟ ปล่อยให้กาแฟคายแก๊ส 30 วินาที" },
-                { time: POUR_TIMINGS[1], label: "รินน้ำ 2", amount: pourAmount, cumulative: bloomAmount + pourAmount, instruction: "รินน้ำร้อนเพิ่มแบบวนก้นหอย" },
-                { time: POUR_TIMINGS[2], label: "รินน้ำ 3", amount: pourAmount, cumulative: bloomAmount + (pourAmount * 2), instruction: "รินน้ำร้อนเพิ่มต่อ" },
-                { time: POUR_TIMINGS[3], label: "รินน้ำ 4 (สุดท้าย)", amount: finalPourAmount, cumulative: totalHotWater, instruction: "รินน้ำร้อนจนครบปริมาณรวมทั้งหมด" }
-            ];
-
-            // สร้าง UI ตารางสูตร
-            recipeList.innerHTML = '';
-            recipeSteps.forEach((step, index) => {
-                const element = document.createElement('div');
-                element.id = `step-${index}`;
-                element.className = `step-item p-3 rounded-lg flex justify-between items-center text-gray-700 transition duration-300 shadow-md border border-gray-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`;
-                element.innerHTML = `
-                    <div class="flex flex-col">
-                        <span class="font-bold text-base text-gray-900">${step.label}</span>
-                        <span class="text-xs text-gray-500">${step.instruction}</span>
-                        <span class="text-sm font-mono mt-1 text-blue-600">เวลาเริ่มริน: ${formatTime(step.time)}</span>
+            available.forEach(([key, r]) => {
+                const isActive = CONFIG.recipe === key;
+                const div = document.createElement('div');
+                div.className = `p-4 rounded-xl border cursor-pointer transition-all flex justify-between items-center ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-slate-100 hover:border-slate-200'}`;
+                div.onclick = () => { CONFIG.recipe = key; renderRecipes(); };
+                div.innerHTML = `
+                    <div>
+                        <h3 class="font-bold text-sm ${isActive ? 'text-indigo-900' : 'text-slate-700'}">${r.name}</h3>
+                        <p class="text-xs ${isActive ? 'text-indigo-600' : 'text-slate-400'}">${r.desc}</p>
                     </div>
-                    <div class="text-right">
-                        <span class="text-2xl font-extrabold text-orange-600">${step.amount} g</span>
-                        <span class="block text-xs text-gray-500"> (รวมน้ำร้อน: ${step.cumulative} g)</span>
+                    ${isActive ? '<i class="fa-solid fa-check-circle text-indigo-600 text-lg"></i>' : ''}
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        function renderTimeline() {
+            const container = document.getElementById('timeline-container');
+            container.innerHTML = '';
+            
+            session.steps.forEach((s, i) => {
+                let stateClass = 'opacity-40'; // Future
+                let icon = 'fa-circle';
+                
+                if (i === session.stepIdx) {
+                    stateClass = 'opacity-100 font-bold bg-white shadow-sm border-slate-100'; // Current
+                    icon = 'fa-play text-indigo-500 text-[10px]';
+                } else if (i < session.stepIdx) {
+                    stateClass = 'opacity-50 line-through'; // Past
+                    icon = 'fa-check text-green-500';
+                }
+
+                const div = document.createElement('div');
+                div.id = `tl-item-${i}`;
+                div.className = `flex items-center gap-3 p-2 rounded-lg border border-transparent transition-all ${stateClass}`;
+                div.innerHTML = `
+                    <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center flex-none">
+                        <i class="fa-solid ${icon} text-xs text-slate-400"></i>
+                    </div>
+                    <div class="flex-1 flex justify-between items-center">
+                        <span class="text-xs text-slate-700">${s.name}</span>
+                        <div class="text-right">
+                            <div class="text-[10px] font-mono text-slate-500">${s.water}ml</div>
+                            <div class="text-[10px] text-slate-300 font-mono">${s.time}s</div>
+                        </div>
                     </div>
                 `;
-                recipeList.appendChild(element);
-            });
-            updateStatusAndCountdown();
-        }
-
-        // 3. ฟังก์ชันอัปเดตสถานะและการนับถอยหลัง
-        function updateStatusAndCountdown() {
-            const currentRecipe = recipes[currentRecipeKey];
-            let currentStepIndex = -1;
-            
-            // 1. หาขั้นตอนปัจจุบันที่เพิ่งดำเนินการเสร็จสิ้น
-            for (let i = POUR_TIMINGS.length - 1; i >= 0; i--) {
-                if (timeInSeconds >= POUR_TIMINGS[i]) {
-                    currentStepIndex = i;
-                    break;
-                }
-            }
-
-            // 2. คำนวณเวลานับถอยหลัง
-            if (isRunning && timeInSeconds < currentRecipe.maxTime) {
-                let nextPourTime;
-                
-                if (currentStepIndex < POUR_TIMINGS.length - 1) {
-                    nextPourTime = POUR_TIMINGS[currentStepIndex + 1];
-                    const countdown = nextPourTime - timeInSeconds;
-                    countdownDisplay.textContent = formatTime(countdown);
-                } else {
-                    // กำลังรินรอบสุดท้าย: นับถอยหลังถึงเวลาที่ควรหยุด
-                    nextPourTime = currentRecipe.maxTime;
-                    const countdown = nextPourTime - timeInSeconds;
-                    countdownDisplay.textContent = formatTime(countdown);
-                }
-            } else {
-                countdownDisplay.textContent = "--:--";
-            }
-            
-            // 3. อัปเดตข้อความสถานะ
-            if (!isRunning && timeInSeconds === 0) {
-                statusDisplay.textContent = `พร้อมที่จะเริ่ม: ${recipes[currentRecipeKey].name}`;
-            } else if (timeInSeconds >= currentRecipe.maxTime) {
-                statusDisplay.textContent = "✅ สิ้นสุดการสกัด (กาแฟพร้อมเสิร์ฟ)";
-            } else if (currentStepIndex !== -1 && recipeSteps.length > 0) {
-                const currentStep = recipeSteps[currentStepIndex];
-                statusDisplay.textContent = `รินเสร็จ: ${currentStep.label} (${currentStep.amount} g)`;
-                if (currentStepIndex < POUR_TIMINGS.length - 1 && isRunning) {
-                     statusDisplay.textContent += ` - เตรียมรินรอบถัดไป`;
-                }
-            }
-
-            // 4. ไฮไลต์ขั้นตอน
-            document.querySelectorAll('.step-item').forEach((el, index) => {
-                const stepElement = document.getElementById(`step-${index}`);
-                // ล้างคลาสไฮไลต์/เสร็จสิ้น
-                stepElement.classList.remove('ring-4', 'ring-orange-300', 'bg-orange-100', 'opacity-50', 'bg-green-100');
-                
-                // คืนค่าสีพื้นหลังเริ่มต้น
-                stepElement.classList.remove('bg-gray-50', 'bg-white');
-                stepElement.classList.add(index % 2 === 0 ? 'bg-gray-50' : 'bg-white');
-
-                if (timeInSeconds > POUR_TIMINGS[index] || timeInSeconds === POUR_TIMINGS[index]) {
-                    // ขั้นตอนที่เสร็จสิ้น (Finished/Passed)
-                    stepElement.classList.add('opacity-50', 'bg-green-100');
-                }
-                
-                if (index === currentStepIndex && timeInSeconds < currentRecipe.maxTime) {
-                    // ขั้นตอนปัจจุบันที่เพิ่งทำเสร็จ (เน้น)
-                    stepElement.classList.remove('opacity-50', 'bg-green-100', 'bg-gray-50', 'bg-white');
-                    stepElement.classList.add('ring-4', 'ring-orange-300', 'bg-orange-100');
-                }
+                container.appendChild(div);
             });
         }
 
-        // 4. ฟังก์ชันอัปเดตตัวจับเวลาหลัก
-        function updateTimer() {
-            timeInSeconds++;
-            timerDisplay.textContent = formatTime(timeInSeconds);
-            updateStatusAndCountdown();
+        // --- ACTIONS ---
+        function setEquipment(key) {
+            CONFIG.equipment = key;
+            renderEquipment();
+        }
 
-            // หยุดอัตโนมัติเมื่อครบเวลาสูงสุด
-            if (timeInSeconds >= recipes[currentRecipeKey].maxTime) {
-                stopTimer(true);
+        function adjustCoffee(delta) {
+            let newVal = CONFIG.coffee + delta;
+            if (newVal < 10) newVal = 10;
+            CONFIG.coffee = newVal;
+            document.getElementById('coffee-val').innerText = newVal;
+            updateCalc();
+        }
+
+        function updateCalc() {
+            CONFIG.ratio = document.getElementById('ratio-slider').value;
+            document.getElementById('ratio-val').innerText = CONFIG.ratio;
+            
+            session.totalWater = Math.ceil(CONFIG.coffee * CONFIG.ratio);
+            document.getElementById('water-val').innerText = session.totalWater;
+        }
+
+        // --- BREWING CORE ---
+        async function startBrewing() {
+            // Wake Lock
+            try {
+                if ('wakeLock' in navigator) {
+                    session.wakeLock = await navigator.wakeLock.request('screen');
+                }
+            } catch (err) { console.log('Wake Lock error', err); }
+
+            // Logic
+            const r = RECIPES[CONFIG.recipe];
+            session.steps = r.steps(CONFIG.coffee, session.totalWater);
+            session.stepIdx = 0;
+            session.time = 0;
+            session.active = true;
+            session.paused = false;
+
+            // UI Transition
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('start-btn-container').classList.add('hidden');
+            document.getElementById('brewing-screen').classList.remove('hidden');
+            document.getElementById('brewing-screen').classList.add('flex');
+            
+            // Audio Init (for mobile browser policy)
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            updateStepUI();
+            renderTimeline();
+            
+            if (session.interval) clearInterval(session.interval);
+            session.interval = setInterval(tick, 1000);
+        }
+
+        function tick() {
+            if (session.paused) return;
+
+            session.time++;
+            document.getElementById('main-timer').innerText = formatTime(session.time);
+
+            // Calc Step Logic
+            let accumulatedTime = 0;
+            for(let i=0; i < session.stepIdx; i++) accumulatedTime += session.steps[i].time;
+            
+            const currentStep = session.steps[session.stepIdx];
+            const timeInStep = session.time - accumulatedTime;
+            const remaining = currentStep.time - timeInStep;
+
+            // Circle Animation (Global Progress)
+            const totalDuration = session.steps.reduce((acc, s) => acc + s.time, 0);
+            const percent = Math.min(session.time / totalDuration, 1);
+            document.getElementById('timer-circle').style.strokeDashoffset = 754 - (754 * percent);
+
+            if (timeInStep >= currentStep.time) {
+                nextStep();
             }
         }
 
-        // 5. ฟังก์ชันควบคุม
-        function startTimer() {
-            if (isRunning) return;
-            isRunning = true;
-            timerInterval = setInterval(updateTimer, 1000);
-            startBtn.classList.add('hidden');
-            stopBtn.classList.remove('hidden');
-            stopBtn.textContent = 'หยุดชั่วคราว (Pause)';
-            coffeeInput.disabled = true;
-            recipeSelect.disabled = true; // ล็อกการเปลี่ยนสูตรขณะดริป
-            updateStatusAndCountdown();
-        }
-
-        function stopTimer(isFinished = false) {
-            if (!isRunning && !isFinished) return;
-            clearInterval(timerInterval);
-            isRunning = false;
-            
-            if (isFinished) {
-                // สิ้นสุดการทำงาน
-                stopBtn.classList.add('hidden');
-                startBtn.classList.remove('hidden');
-                startBtn.textContent = 'สิ้นสุดการดริป';
-                startBtn.disabled = true;
-                timerDisplay.classList.add('text-red-500');
+        function nextStep() {
+            if (session.stepIdx < session.steps.length - 1) {
+                session.stepIdx++;
+                playSound('step');
+                hapticFeedback();
+                updateStepUI();
+                renderTimeline();
+                // Auto Scroll Timeline
+                document.getElementById(`tl-item-${session.stepIdx}`).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             } else {
-                // หยุดชั่วคราว
-                stopBtn.textContent = 'ดำเนินการต่อ (Continue)';
-                startBtn.classList.remove('hidden');
-                stopBtn.classList.add('hidden');
+                finishBrewing();
             }
-            coffeeInput.disabled = false;
-            recipeSelect.disabled = false;
-            updateStatusAndCountdown();
         }
 
-        function resetTimer() {
-            stopTimer();
-            timeInSeconds = 0;
-            timerDisplay.textContent = formatTime(timeInSeconds);
-            timerDisplay.classList.remove('text-red-500');
+        function updateStepUI() {
+            const s = session.steps[session.stepIdx];
             
-            startBtn.textContent = 'เริ่มดริป (Start)';
-            startBtn.disabled = false;
-            startBtn.classList.remove('hidden');
-            stopBtn.classList.add('hidden');
+            // Fade effect
+            const title = document.getElementById('step-label');
+            const target = document.getElementById('step-target-display');
+            const instruc = document.getElementById('step-instruction');
             
-            coffeeInput.disabled = false;
-            recipeSelect.disabled = false;
-            updateRecipe(); // รีเซ็ตสูตรและสถานะทั้งหมด
+            title.style.opacity = 0;
+            instruc.style.opacity = 0;
+            
+            setTimeout(() => {
+                title.innerText = s.name;
+                title.className = `text-xs font-bold uppercase tracking-widest mb-2 px-2 py-1 rounded ${s.type === 'wait' ? 'text-amber-600 bg-amber-50' : 'text-indigo-600 bg-indigo-50'}`;
+                
+                target.innerText = `${s.water}ml`;
+                
+                // Add Icon to instruction
+                const icon = s.type === 'wait' ? '<i class="fa-solid fa-hourglass-half mr-2"></i>' : '<i class="fa-solid fa-fill-drip mr-2"></i>';
+                instruc.innerHTML = icon + s.text;
+                
+                title.style.opacity = 1;
+                instruc.style.opacity = 1;
+            }, 150);
         }
 
-        // 6. การผูก Event Listeners
-        recipeSelect.addEventListener('change', resetTimer); // รีเซ็ตเมื่อเปลี่ยนสูตร
-        coffeeInput.addEventListener('input', updateRecipe);
-        startBtn.addEventListener('click', startTimer);
-        stopBtn.addEventListener('click', stopTimer);
-        resetBtn.addEventListener('click', resetTimer);
+        function finishBrewing() {
+            clearInterval(session.interval);
+            playSound('finish');
+            hapticFeedback(200);
+            
+            // Release Wake Lock
+            if (session.wakeLock) session.wakeLock.release();
 
-        // เริ่มต้นแอปพลิเคชัน
-        updateRecipe(); // คำนวณสูตรและแสดงผลครั้งแรก
+            const modal = document.getElementById('finish-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            // Allow layout render then fade in
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                document.getElementById('modal-content').classList.remove('scale-95');
+                document.getElementById('modal-content').classList.add('scale-100');
+            }, 10);
+            
+            document.getElementById('final-time').innerText = formatTime(session.time);
+            document.getElementById('final-water').innerText = `${session.totalWater}ml`;
+        }
 
+        // --- UTILS ---
+        function togglePause() {
+            session.paused = !session.paused;
+            const btn = document.getElementById('pause-btn');
+            btn.innerHTML = session.paused ? '<i class="fa-solid fa-play"></i>' : '<i class="fa-solid fa-pause"></i>';
+            btn.classList.toggle('bg-amber-50');
+            btn.classList.toggle('text-amber-600');
+        }
+
+        function skipStep() {
+            let targetTime = 0;
+            for(let i=0; i<=session.stepIdx; i++) targetTime += session.steps[i].time;
+            session.time = targetTime;
+            nextStep();
+        }
+
+        function stopBrewing() {
+            if(confirm("Stop brewing?")) {
+                clearInterval(session.interval);
+                resetApp();
+            }
+        }
+
+        function resetApp() {
+            window.location.reload();
+        }
+        
+        function closeModal() {
+            resetApp();
+        }
+
+        function formatTime(s) {
+            const m = Math.floor(s/60).toString().padStart(2,'0');
+            const sec = (s%60).toString().padStart(2,'0');
+            return `${m}:${sec}`;
+        }
+
+        // --- AUDIO & HAPTIC ---
+        function toggleSound() {
+            CONFIG.sound = !CONFIG.sound;
+            const btn = document.getElementById('sound-btn');
+            btn.innerHTML = CONFIG.sound ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark text-slate-300"></i>';
+        }
+
+        function playSound(type) {
+            if (!CONFIG.sound) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            const now = audioCtx.currentTime;
+            
+            if (type === 'step') {
+                // Pleasant chime
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(1046.5, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            } else if (type === 'finish') {
+                // Major chord
+                [523.25, 659.25, 783.99].forEach((f, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.frequency.value = f;
+                    g.gain.setValueAtTime(0.1, now);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + 2);
+                    o.start(now + i*0.1);
+                    o.stop(now + 2 + i*0.1);
+                });
+            }
+        }
+
+        function hapticFeedback(ms = 50) {
+            if (navigator.vibrate) navigator.vibrate(ms);
+        }
+
+        function toggleWakeLock() {
+            alert("Wake Lock is managed automatically when brewing starts.");
+        }
+
+        // Run
+        init();
     </script>
 </body>
 </html>
+
