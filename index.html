@@ -203,17 +203,26 @@
                 </svg>
                 
                 <div class="absolute inset-0 flex flex-col items-center justify-center z-10">
-                    <span id="step-label" class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-2 bg-indigo-50 px-2 py-1 rounded">Blooming</span>
-                    <span id="main-timer" class="text-6xl font-bold text-slate-800 font-mono tracking-tighter">00:00</span>
-                    <div class="mt-2 text-slate-400 text-sm font-medium flex items-center gap-2">
-                        <span>Target:</span>
-                        <span id="step-target-display" class="text-slate-800 font-bold text-lg">40ml</span>
+                    <span id="step-label" class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1 bg-indigo-50 px-2 py-0.5 rounded">Blooming</span>
+                    
+                    <!-- NEW: Countdown Timer as Hero -->
+                    <span id="step-countdown" class="text-6xl font-bold text-slate-800 font-mono tracking-tighter leading-none mb-1">00:45</span>
+                    
+                    <!-- Moved Total Time to Secondary -->
+                    <div class="text-slate-400 text-xs font-medium uppercase tracking-wide mb-3">
+                        Total: <span id="main-timer" class="font-mono text-slate-500">00:00</span>
+                    </div>
+
+                    <!-- Target Display -->
+                    <div class="flex items-center gap-2 bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
+                        <span class="text-[10px] text-slate-400 uppercase tracking-wider">Target</span>
+                        <span id="step-target-display" class="text-slate-800 font-bold font-mono">40ml</span>
                     </div>
                 </div>
             </div>
 
             <!-- Instruction -->
-            <div class="mt-8 text-center px-8 w-full animate-fade-in">
+            <div class="mt-6 text-center px-8 w-full animate-fade-in">
                 <p id="step-instruction" class="text-slate-500 text-lg font-medium leading-relaxed">เทน้ำร้อนให้ทั่วผงกาแฟ</p>
             </div>
         </div>
@@ -485,12 +494,14 @@
 
         // --- BREWING CORE ---
         async function startBrewing() {
-            // Wake Lock
+            // Wake Lock - Progressive Enhancement
             try {
                 if ('wakeLock' in navigator) {
                     session.wakeLock = await navigator.wakeLock.request('screen');
                 }
-            } catch (err) { console.log('Wake Lock error', err); }
+            } catch (err) { 
+                console.warn('Wake Lock failed:', err.message); 
+            }
 
             // Logic
             const r = RECIPES[CONFIG.recipe];
@@ -528,7 +539,10 @@
             
             const currentStep = session.steps[session.stepIdx];
             const timeInStep = session.time - accumulatedTime;
-            const remaining = currentStep.time - timeInStep;
+            const remaining = Math.max(0, currentStep.time - timeInStep);
+
+            // NEW: Update Countdown Timer
+            document.getElementById('step-countdown').innerText = formatTime(remaining);
 
             // Circle Animation (Global Progress)
             const totalDuration = session.steps.reduce((acc, s) => acc + s.time, 0);
@@ -557,6 +571,9 @@
         function updateStepUI() {
             const s = session.steps[session.stepIdx];
             
+            // Set initial countdown immediately
+            document.getElementById('step-countdown').innerText = formatTime(s.time);
+
             // Fade effect
             const title = document.getElementById('step-label');
             const target = document.getElementById('step-target-display');
@@ -567,7 +584,7 @@
             
             setTimeout(() => {
                 title.innerText = s.name;
-                title.className = `text-xs font-bold uppercase tracking-widest mb-2 px-2 py-1 rounded ${s.type === 'wait' ? 'text-amber-600 bg-amber-50' : 'text-indigo-600 bg-indigo-50'}`;
+                title.className = `text-xs font-bold uppercase tracking-widest mb-1 px-2 py-0.5 rounded ${s.type === 'wait' ? 'text-amber-600 bg-amber-50' : 'text-indigo-600 bg-indigo-50'}`;
                 
                 target.innerText = `${s.water}ml`;
                 
@@ -693,4 +710,3 @@
     </script>
 </body>
 </html>
-
